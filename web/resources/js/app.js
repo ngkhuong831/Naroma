@@ -6,7 +6,14 @@ import { createInertiaApp, Head, Link } from '@inertiajs/vue3';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { ZiggyVue } from '../../vendor/tightenco/ziggy/dist/vue.m';
 
+
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
+// For Element plus package
+import ElementPlus from 'element-plus'
+import 'element-plus/dist/index.css'
+
+
+
 
 createInertiaApp({
     title: (title) => `${title} - ${appName}`,
@@ -17,7 +24,8 @@ createInertiaApp({
             .component('InertiaHead', Head)
             .component('InertiaLink', Link)
             .use(ZiggyVue)
-            .mount(el);
+            .use(ElementPlus)
+            .mount(el)
     },
     progress: {
         color: '#4B5563',
