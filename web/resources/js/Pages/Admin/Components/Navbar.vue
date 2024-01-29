@@ -1,3 +1,5 @@
+
+import { Link } from '@inertiajs/vue3';
 <template>
     <nav
         class="bg-white border-b border-gray-200 px-4 py-2.5 dark:bg-gray-800 dark:border-gray-700 fixed left-0 right-0 top-0 z-50">
@@ -20,10 +22,10 @@
                     </svg>
                     <span class="sr-only">Toggle sidebar</span>
                 </button>
-                <a href="https://flowbite.com" class="flex items-center justify-between mr-4">
-                    <img src="https://flowbite.s3.amazonaws.com/logo.svg" class="mr-3 h-8" alt="Flowbite Logo" />
-                    <span class="self-center text-2xl font-semibold whitespace-nowrap dark:text-white">Flowbite</span>
-                </a>
+                <InertiaLink :href="route('admin.dashboard')" class="flex items-center justify-between mr-4">
+                    <img src="https://naroma.ltd/wp-content/uploads/2023/03/naroma-logo-1.png" class="mr-3 h-8" alt="Flowbite Logo" />
+                    <span class="self-center text-2xl font-semibold whitespace-nowrap dark:text-white">CRM Dashboard</span>
+                </InertiaLink>
                 <form action="#" method="GET" class="hidden md:block md:pl-2">
                     <label for="topbar-search" class="sr-only">Search</label>
                     <div class="relative md:w-64 md:w-96">
@@ -427,9 +429,9 @@
                     </ul>
                     <ul class="py-1 text-gray-700 dark:text-gray-300" aria-labelledby="dropdown">
                         <li>
-                            <Link :href="route('logout')" method="post"
+                            <InertiaLink :href="route('logout')" method="post"
                                 class="block py-2 px-4 text-sm hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Log
-                                out</Link>
+                                out</InertiaLink>
                         </li>
                     </ul>
                 </div>
