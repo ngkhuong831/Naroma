@@ -9,8 +9,13 @@ use Spatie\Sluggable\HasSlug;
 
 class Brand extends Model
 {
-    use HasFactory;
-    use HasSlug;
+    ####################
+    ## FIX THIS LATER ##
+    ####################
+    // Slug generator package affect initialisation.
+
+    // use HasFactory;
+    // use HasSlug;
 
     protected $fillable = ['name', 'slug'];
 
@@ -18,10 +23,10 @@ class Brand extends Model
         return $this->hasMany(Product::class);
     }
 
-    function getSlugOption(): SlugOptions
-    {
-        return SlugOptions::create()
-            ->generateSlugsFrom('name')
-            ->saveSlugsTo('slug');
-    }
+    // function getSlugOption(): SlugOptions
+    // {
+    //     return SlugOptions::create()
+    //         ->generateSlugsFrom('name')
+    //         ->saveSlugsTo('slug');
+    // }
 }

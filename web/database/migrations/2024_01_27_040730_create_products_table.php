@@ -22,7 +22,7 @@ return new class extends Migration
             $table->longText('description')->nullable();
             $table->boolean('published')->default(0);
             $table->boolean('in_stock')->default(0);
-            $table->boolean('price',10,2);
+            $table->decimal('price',10,2);
             $table->foreignIdFor(User::class,'created_by')->nullable();
             $table->foreignIdFor(User::class,'updated_by')->nullable();
             $table->foreignIdFor(Brand::class,'brand_id')->nullable();

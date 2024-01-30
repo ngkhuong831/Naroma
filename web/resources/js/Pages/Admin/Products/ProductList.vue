@@ -1,36 +1,336 @@
 <script setup>
-import { usePage } from '@inertiajs/vue3';
+import { router, usePage } from '@inertiajs/vue3';
 import { ref } from 'vue';
+import { Plus } from '@element-plus/icons-vue';
 
+defineProps({
+    products: Array
+})
 
+const brands = usePage().props.brands;
+const categories = usePage().props.categories;
 
-
-const products = usePage().props.products;
-
-const dialogVisible = ref(false)
+const dialogVisible = ref(false);
 const isAddProduct = ref(false);
+const editMode = ref(false);
+
+// Upload Multiple Images
+const productImages = ref([]);
+const dialogImageUrl = ref('');
+
+const handleFileChange = (file) => {
+    productImages.value.push(file)
+}
+
+const handlePictureCardPreview = (file) => {
+    dialogImageUrl.value = file.url
+    dialogVisible.value = true
+}
+
+const handleRemove = (file) => {
+    console.log(file)
+}
+
+// Product Form Data
+const id = ref('');
+const title = ref('');
+const price = ref('');
+const quantity = ref('');
+const description = ref('');
+const product_images = ref([]);
+const published = ref('');
+const category_id = ref('');
+const brand_id = ref('');
+const in_stock = ref('');
+
+// const dialogProductVisible = ref(false);
+
+// Product Form Data End
+
+//add product method
+const AddProduct = async () => {
+    const formData = new FormData();
+    formData.append('title', title.value);
+    formData.append('price', price.value);
+    formData.append('quantity', quantity.value);
+    formData.append('description', description.value);
+    formData.append('brand_id', brand_id.value);
+    formData.append('category_id', category_id.value);
+
+    // Append product images to the Form
+    for (const image of productImages.value) {
+        formData.append('product_images[]', image.raw);
+    }
+
+    try {
+        await router.post('products/store', formData, {
+            onSuccess: page => {
+                Swal.fire({
+                    toast: true,
+                    icon: 'success',
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    title: page.props.flash.success
+                })
+                dialogVisible.value = false;
+                resetFormData()
+            },
+        })
+    } catch (e) {
+        console.log(e)
+    }
+
+}
+
+// reset form data after created
+
+const resetFormData = () => {
+    id.value = '';
+    title.value = '';
+    price.value = '';
+    quantity.value = '';
+    description.value = '';
+    productImages.value = '';
+    dialogImageUrl.value = '';
+}
+
+// delete ONE product image
+
+const deleteImage = async (pimage, index) => {
+    try {
+        await router.delete('/admin/products/image/' + pimage.id, {
+            onSuccess: (page) => {
+                product_images.value.splice(index, 1);
+                Swal.fire({
+                    toast: true,
+                    icon: "success",
+                    position: "top-end",
+                    showConfirmButton: false,
+                    title: page.props.flash.success
+                })
+            }
+        })
+    } catch (e) {
+        console.log(e);
+    }
+}
+
+// Update product method
+
+const updateProduct = async () => {
+    const formData = new FormData();
+    formData.append('title', title.value);
+    formData.append('price', price.value);
+    formData.append('quantity', quantity.value);
+    formData.append('description', description.value);
+    formData.append('brand_id', brand_id.value);
+    formData.append('category_id', category_id.value);
+    formData.append('_method', 'PUT');
+
+    // Append product images to the Form
+    for (const image of productImages.value) {
+        formData.append('product_images[]', image.raw);
+    }
+
+    try {
+        await router.post('products/update/' + id.value, formData, {
+            onSuccess: page => {
+                dialogVisible.value = false;
+                resetFormData();
+                Swal.fire({
+                    toast: true,
+                    icon: 'success',
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    title: page.props.flash.success
+                })
+                dialogVisible.value = false;
+                resetFormData()
+            },
+        })
+    } catch (e) {
+        console.log(e)
+    }
+
+}
+
+// Delete product method
+
+const deleteProduct = async (product, index) => {
+    Swal.fire({
+        title: 'Are you Sure?',
+        text: 'YOU CAN NOT UNDO THIS ACTION!',
+        icon: 'warning',
+        showCancelButton: true,
+        showConfirmButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonColor: 'No',
+        cancelButtonColor: 'Yes, Delete!',
+    }).then((result) => {
+        if (result.isConfirmed) {
+            try {
+                router.delete('products/destroy/' + product.id, {
+                    onSuccess: (page) => {
+                        this.delete(product, index);
+                        Swal.fire({
+                            toast: true,
+                            icon: 'success',
+                            position: 'top-end',
+                            showConfirmButton: false,
+                            title: page.props.flash.success
+                        });
+                    }
+                })
+            } catch (e) {
+                console.log(e)
+            }
+        }
+    })
+}
 
 const openAddModal = () => {
     isAddProduct.value = true
     dialogVisible.value = true
+    editMode.value = false
+}
+
+const openEditModal = (product) => {
+    console.log(product)
+    isAddProduct.value = false
+    dialogVisible.value = true
+    editMode.value = true
+
+    // update data
+    id.value = product.id;
+    title.value = product.title;
+    price.value = product.price;
+    quantity.value = product.quantity;
+    description.value = product.description;
+    brand_id.value = product.brand_id;
+    category_id.value = product.category_id;
+    product_images.value = product.product_images;
 }
 
 </script>
 <template>
     <section class="bg-gray-50 dark:bg-gray-900 p-3 sm:p-5">
+
         <!-- ADD PRODUCT DIALOG -->
-        <el-dialog v-model="dialogVisible" title="Tips" width="30%" :before-close="handleClose">
-            <span>This is a message</span>
-            <template #footer>
+        <el-dialog v-model="dialogVisible" :title="editMode ? 'Edit Product' : 'Add Product'" width="30%"
+            :before-close="handleClose">
+
+            <!-- CREATE PRODUCT FORM -->
+            <!-- FORM DATA -->
+            <form class="max-w-md mx-auto" @submit.prevent=" editMode ? updateProduct() : AddProduct()">
+                <div class="relative z-0 w-full mb-5 group">
+                    <input v-model="title" type="text" name="floating_title" id="floating_title"
+                        class="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+                        placeholder=" " required />
+                    <label for="floating_title"
+                        class="peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">Product
+                        Title</label>
+                </div>
+                <div class="relative z-0 w-full mb-5 group">
+                    <input v-model="price" type="text" name="floating_price" id="floating_price"
+                        class="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+                        placeholder=" " required />
+                    <label for="floating_price"
+                        class="peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">Price</label>
+                </div>
+                <div class="relative z-0 w-full mb-5 group">
+                    <input v-model="quantity" type="number" name="quantity" id="floating_quantity"
+                        class="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+                        placeholder=" " required />
+                    <label for="floating_repeat_password"
+                        class="peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">Quantity</label>
+                </div>
+
+                <div>
+                    <label for="brand_id" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Select
+                        Category</label>
+                    <select id="brand" v-model="category_id"
+                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
+                        <option v-for="category in categories" :key="category.id" :value="category.id"> {{ category.name }}
+                        </option>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="category_id" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Select
+                        Brand</label>
+                    <select id="category" v-model="brand_id"
+                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
+                        <option v-for="brand in brands" :key="brand.id" :value="brand.id">{{ brand.name }}</option>
+                    </select>
+                </div>
+
+
+
+                <div class="grid md:gap-6">
+                    <div class="relative z-0 w-full mb-5 group">
+                        <label for="description"
+                            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Description</label>
+                        <textarea id="message" rows="4" v-model="description"
+                            class="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                            placeholder="Write your thoughts here..."></textarea>
+
+                    </div>
+                </div>
+
+                <!-- Upload Multiple Image -->
+
+                <div class="grid md:gap-6">
+                    <div class="relative z-0 w-full mb-5 group">
+                        <label for="images"
+                            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Image</label>
+                        <el-upload v-model:file-list="productImages" list-type="picture-card" multiple
+                            :on-preview="handlePictureCardPreview" :on-remove="handleRemove" :on-change="handleFileChange">
+                            <el-icon>
+                                <Plus />
+                            </el-icon>
+                        </el-upload>
+                    </div>
+                </div>
+                <!-- Upload Multiple Image End -->
+
+                <!-- FORM DATA END -->
+
+                <!-- Image List Of Selected Product -->
+
+                <div class="flex flex-wrap mb-8">
+                    <div v-for="(pimage, index) in product_images" :key="pimage.id" class="relative w-24 h-20">
+                        <img class="w-24 h-24 rounded" :src="`/${pimage.image}`" alt="">
+                        <span
+                            class="absolute top-0 right-0 transform -translate-y-1/2 w-3.5 h-3.5 bg-red-400 border-2 border-red-400 dark:border-gray-800 rounded-full">
+                            <span @click="deleteImage(pimage, index)"
+                                class="text-white text-xs font-bold absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                                -
+                            </span>
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Image List Of Selected Product Ene -->
+
+                <button type="submit"
+                    class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">Submit</button>
+            </form>
+
+            <!-- CREATE PRODUCT FORM END -->
+
+            <!-- <template #footer>
                 <span class="dialog-footer">
                     <el-button @click="dialogVisible = false">Cancel</el-button>
                     <el-button type="primary" @click="dialogVisible = false">
                         Confirm
                     </el-button>
                 </span>
-            </template>
+            </template> -->
         </el-dialog>
+
         <!-- ADD PRODUCT DIALOG END -->
+
         <div class="mx-auto max-w-screen-xl px-4 lg:px-12">
             <!-- Start coding here -->
             <div class="bg-white dark:bg-gray-800 relative shadow-md sm:rounded-lg overflow-hidden">
@@ -172,15 +472,26 @@ const openAddModal = () => {
                                 <th scope="row"
                                     class="px-4 py-3 font-medium text-gray-900 whitespace-nowrap dark:text-white">{{
                                         product.title }}</th>
-                                <td class="px-4 py-3">{{ product.category_id }}</td>
-                                <td class="px-4 py-3">{{ product.brand_id }}</td>
+                                <!-- GET CATEGORY AND BRAND FROM ID -->
+                                <td class="px-4 py-3">{{ categories[product.category_id - 1].name }}</td>
+                                <td class="px-4 py-3">{{ brands[product.brand_id - 1].name }}</td>
                                 <td class="px-4 py-3">{{ product.quantity }}</td>
                                 <td class="px-4 py-3">${{ product.price }}</td>
 
-                                <td class="px-4 py-3">{{ product.in_stock }}</td>
-                                <td class="px-4 py-3">{{ product.published }}</td>
+                                <td class="px-4 py-3">
+                                    <span v-if="product.in_stock == 0"
+                                        class="bg-green-100 text-green-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-green-900 dark:text-green-300">Available</span>
+                                    <span v-else
+                                        class="bg-red-100 text-red-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-red-900 dark:text-red-300">Out</span>
+                                </td>
+                                <td class="px-4 py-3">
+                                    <button v-if="product.published == 0" type="button"
+                                        class="px-3 py-2 text-xs font-medium text-center text-white bg-green-700 rounded-lg hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">Published</button>
+                                    <button v-else type="button"
+                                        class="px-3 py-2 text-xs font-medium text-center text-white bg-red-700 rounded-lg hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-red-300 dark:bg-red-600 dark:hover:bg-red-700 dark:focus:ring-red-800">Unpublished</button>
+                                </td>
                                 <td class="px-4 py-3 flex items-center justify-end">
-                                    <button id="apple-imac-27-dropdown-button" data-dropdown-toggle="apple-imac-27-dropdown"
+                                    <button :id="`${product.id}-button`" :data-dropdown-toggle="`${product.id}`"
                                         class="inline-flex items-center p-0.5 text-sm font-medium text-center text-gray-500 hover:text-gray-800 rounded-lg focus:outline-none dark:text-gray-400 dark:hover:text-gray-100"
                                         type="button">
                                         <svg class="w-5 h-5" aria-hidden="true" fill="currentColor" viewbox="0 0 20 20"
@@ -189,21 +500,21 @@ const openAddModal = () => {
                                                 d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z" />
                                         </svg>
                                     </button>
-                                    <div id="apple-imac-27-dropdown"
+                                    <div :id="`${product.id}`"
                                         class="hidden z-10 w-44 bg-white rounded divide-y divide-gray-100 shadow dark:bg-gray-700 dark:divide-gray-600">
                                         <ul class="py-1 text-sm text-gray-700 dark:text-gray-200"
-                                            aria-labelledby="apple-imac-27-dropdown-button">
+                                            :aria-labelledby="`${product.id}-button`">
                                             <li>
                                                 <a href="#"
                                                     class="block py-2 px-4 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Show</a>
                                             </li>
                                             <li>
-                                                <a href="#"
-                                                    class="block py-2 px-4 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Edit</a>
+                                                <button @click="openEditModal(product)"
+                                                    class="block w-full py-2 px-4 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Edit</button>
                                             </li>
                                         </ul>
                                         <div class="py-1">
-                                            <a href="#"
+                                            <a href="#" @click="deleteProduct(product, index)"
                                                 class="block py-2 px-4 text-sm text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 dark:text-gray-200 dark:hover:text-white">Delete</a>
                                         </div>
                                     </div>
