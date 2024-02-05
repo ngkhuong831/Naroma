@@ -7,6 +7,7 @@
     },
     "devDependencies": {
         "@inertiajs/vue3": "^1.0.0",
+        "@tailwindcss/aspect-ratio": "^0.4.2",
         "@tailwindcss/forms": "^0.5.3",
         "@vitejs/plugin-vue": "^5.0.0",
         "autoprefixer": "^10.4.12",
@@ -20,6 +21,7 @@
     "dependencies": {
         "element-plus": "^2.5.3",
         "flowbite": "^2.2.1",
+        "flowbite-vue": "^0.1.2",
         "vue-sweetalert2": "^5.0.5"
     }
 }
